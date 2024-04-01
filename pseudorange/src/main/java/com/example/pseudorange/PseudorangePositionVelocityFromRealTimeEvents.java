@@ -161,7 +161,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
               > mDeltaTimeMillisToMakeSuplRequest) {
         // The following line is blocking call for SUPL connection and back. But it is fast enough
         mGpsNavMessageProtoUsed = getSuplNavMessage(mReferenceLocation[0], mReferenceLocation[1]);
-        Log.d(TAG, "EPHE: " + mGpsNavMessageProtoUsed);
+//        Log.d(TAG, "EPHE: " + mGpsNavMessageProtoUsed);
         if (!isEmptyNavMessage(mGpsNavMessageProtoUsed)) {
           mFirstSuplRequestNeeded = false;
           mLastReceivedSuplMessageTimeMillis = System.currentTimeMillis();
@@ -441,15 +441,22 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
     byte messageType = (byte) (navigationMessage.getType() >> 8);
     int subMessageId = navigationMessage.getSubmessageId();
     byte[] messageRawData = navigationMessage.getData();
+//    Log.d(TAG, "NavgationMess: " + messageRawData);
+    mGpsNavigationMessageStore.onNavMessageReported(
+            messagePrn, messageType, (short) subMessageId, messageRawData);
+    mHardwareGpsNavMessageProto = mGpsNavigationMessageStore.createDecodedNavMessage();
+    List<GpsEphemerisProto> ephemeridesList =
+            new ArrayList<GpsEphemerisProto>(Arrays.asList(mHardwareGpsNavMessageProto.ephemerids));
+    Log.d(TAG, "NavgationMess: " + ephemeridesList);
 
-    if (messageType == 1) {
-      mGpsNavigationMessageStore.onNavMessageReported(
-          messagePrn, messageType, (short) subMessageId, messageRawData);
-      mHardwareGpsNavMessageProto = mGpsNavigationMessageStore.createDecodedNavMessage();
-      List<GpsEphemerisProto> ephemeridesList =
-              new ArrayList<GpsEphemerisProto>(Arrays.asList(mHardwareGpsNavMessageProto.ephemerids));
-      Log.d(TAG, "Hardware: " + ephemeridesList);
-    }
+//    if (messageType == 1) {
+//      mGpsNavigationMessageStore.onNavMessageReported(
+//          messagePrn, messageType, (short) subMessageId, messageRawData);
+//      mHardwareGpsNavMessageProto = mGpsNavigationMessageStore.createDecodedNavMessage();
+//      List<GpsEphemerisProto> ephemeridesList =
+//              new ArrayList<GpsEphemerisProto>(Arrays.asList(mHardwareGpsNavMessageProto.ephemerids));
+//      Log.d(TAG, "NavgationMess: " + ephemeridesList);
+//    }
   }
 
   /** Sets a rough location of the receiver that can be used to request SUPL assistance data */

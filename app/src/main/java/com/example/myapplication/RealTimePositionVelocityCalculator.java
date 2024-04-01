@@ -185,8 +185,8 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                             && mResidualPlotStatus != RESIDUAL_MODE_AT_INPUT_LOCATION) {
                                         updateGroundTruth(posSolution);
                                     }
-                                    String formattedLatDegree = new DecimalFormat("##.######").format(posSolution[0]);
-                                    String formattedLngDegree = new DecimalFormat("##.######").format(posSolution[1]);
+                                    String formattedLatDegree = new DecimalFormat("##.##########").format(posSolution[0]);
+                                    String formattedLngDegree = new DecimalFormat("##.##########").format(posSolution[1]);
                                     String formattedAltMeters = new DecimalFormat("##.#").format(posSolution[2]);
                                     logPositionFromRawDataEvent(
                                             "latDegrees = "
@@ -195,6 +195,12 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                                     + formattedLngDegree
                                                     + "altMeters = "
                                                     + formattedAltMeters);
+                                    mMainActivity.logData(
+                                            formattedLatDegree
+                                            + ", "
+                                            + formattedLngDegree
+                                    );
+
                                     String formattedVelocityEastMps =
                                             new DecimalFormat("##.###").format(velSolution[0]);
                                     String formattedVelocityNorthMps =
@@ -386,15 +392,12 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
     private void logEvent(String tag, String message, int color) {
         String composedTag = MeasurementProvider.TAG + tag;
         Log.d(composedTag, message);
-//        logText(tag, message, color);
+        logText(tag, message, color);
     }
 
-//    private void logText(String tag, String text, int color) {
-//        UIResultComponent component = getUiResultComponent();
-//        if (component != null) {
-//            component.logTextResults(tag, text, color);
-//        }
-//    }
+    private void logText(String tag, String text, int color) {
+//        mMainActivity.logData(text);
+    }
 
     public void logLocationEvent(String event) {
         mCurrentColor = getNextColor();

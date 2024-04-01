@@ -2,37 +2,15 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.util.Log;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.fragment.app.Fragment;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.viewpager.widget.ViewPager;
-import com.example.myapplication.DetectedActivitiesIntentReceiver;
-
-import com.google.android.gms.location.ActivityRecognitionResult;
-import com.google.android.material.tabs.TabLayout;
-
-import java.lang.reflect.InvocationTargetException;
 
 public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_REQUEST_ID = 1;
@@ -43,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private MeasurementProvider mMeasurementProvider;
     private RealTimePositionVelocityCalculator mRealTimePositionVelocityCalculator;
 
-
+    TextView show_log;
 
     @Override
     protected void onStart() {
@@ -77,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        show_log = (TextView) findViewById(R.id.text_view);
+        show_log.append("1");
         requestPermission(this);
     }
 
@@ -129,5 +109,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void logData(String message) {
+        show_log.setText(message);
+    }
 
 }
