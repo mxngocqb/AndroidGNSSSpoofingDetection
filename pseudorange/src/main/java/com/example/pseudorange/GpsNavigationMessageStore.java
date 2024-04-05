@@ -175,7 +175,6 @@ public class GpsNavigationMessageStore {
   @NonNull
   public GpsNavMessageProto createDecodedNavMessage() {
     synchronized (fullyDecodedIntermediateEphemerides) {
-      ;
       GpsNavMessageProto gpsNavMessageProto = new GpsNavMessageProto();
       ArrayList<GpsEphemerisProto> gpsEphemerisProtoList = new ArrayList<>();
       for (int i = 0; i < MAX_NUMBER_OF_SATELLITES; i++) {
