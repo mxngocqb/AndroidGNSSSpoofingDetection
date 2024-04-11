@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.codec.binary.Hex;
+import org.json.JSONObject;
 
 /**
  * Helper class for calculating Gps position and velocity solution using weighted least squares
@@ -74,7 +75,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
     private boolean mFirstUsefulMeasurementSet = true;
     private int[] mReferenceLocation = null;
     private long mLastReceivedSuplMessageTimeMillis = 0;
-    private long mDeltaTimeMillisToMakeSuplRequest = TimeUnit.SECONDS.toMillis(30);
+    private long mDeltaTimeMillisToMakeSuplRequest = TimeUnit.MINUTES.toMillis(30);
     private boolean mFirstSuplRequestNeeded = true;
     private GpsNavMessageProto mGpsNavMessageProtoUsed = null;
 
@@ -86,6 +87,10 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
             new GpsMeasurement[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
     private Long[] mUsefulSatellitesToTowNs =
             new Long[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
+
+
+    NavMessageProvider navMessageProvider = new NavMessageProvider();
+    NavMessageRSA  navMessageRSA = new NavMessageRSA();
     private long mLargestTowNs = Long.MIN_VALUE;
     private double mArrivalTimeSinceGPSWeekNs = 0.0;
     private int mDayOfYear1To366 = 0;
@@ -165,7 +170,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                     > mDeltaTimeMillisToMakeSuplRequest) {
                 // The following line is blocking call for SUPL connection and back. But it is fast enough
                 mGpsNavMessageProtoUsed = getSuplNavMessage(mReferenceLocation[0], mReferenceLocation[1]);
-//                Log.d(TAG, "EPHE: " + mGpsNavMessageProtoUsed);
+                Log.d(TAG, "EPHE: " + mGpsNavMessageProtoUsed);
                 if (!isEmptyNavMessage(mGpsNavMessageProtoUsed)) {
                     mFirstSuplRequestNeeded = false;
                     mLastReceivedSuplMessageTimeMillis = System.currentTimeMillis();
@@ -455,18 +460,26 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
         String pattern = "10001011";
         int startIndex = bitString.indexOf(pattern);
-        int endIndex = startIndex + 300;
+        int endIndex = startIndex + 316;
         String extractedBits = bitString.substring(startIndex, endIndex);
-
-        StringBuilder hexString = new StringBuilder();
-        for (int i = 0; i < extractedBits.length(); i += 4) {
-            // Extract 4 bits at a time and convert them to hexadecimal
-            String fourBits = extractedBits.substring(i, i + 4);
-            int decimal = Integer.parseInt(fourBits, 2);
-            hexString.append(Integer.toHexString(decimal));
+        StringBuilder resultBuilder = new StringBuilder();
+        int currentIndex = 0;
+        while (currentIndex < extractedBits.length()) {
+            String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
+            resultBuilder.append(bitsToKeep);
+            currentIndex += 32;
         }
 
-        Log.d(TAG, "SV: " + messagePrn + " SF: " + subMessageId + " NavigationMess: " + hexString);
+        StringBuilder navMessage = new StringBuilder();
+        for (int i = 0; i < resultBuilder.length(); i += 4) {
+            String fourBits = resultBuilder.substring(i, i + 4);
+            int decimal = Integer.parseInt(fourBits, 2);
+            navMessage.append(Integer.toHexString(decimal));
+        }
+
+        String bitsToConvert = resultBuilder.substring(24, 24 + 19);
+        int tow = (int)((((Integer.parseInt(bitsToConvert, 2))*1.5)/6)*6);
+        Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " +tow+ " NavigationMess: " + navMessage);
 
         if (messageType == 1) {
             mGpsNavigationMessageStore.onNavMessageReported(
@@ -474,7 +487,6 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
             mHardwareGpsNavMessageProto = mGpsNavigationMessageStore.createDecodedNavMessage();
             List<GpsEphemerisProto> ephemeridesList =
                     new ArrayList<GpsEphemerisProto>(Arrays.asList(mHardwareGpsNavMessageProto.ephemerids));
-//            Log.d(TAG, "NavigationMess: " + ephemeridesList);
         }
     }
 
