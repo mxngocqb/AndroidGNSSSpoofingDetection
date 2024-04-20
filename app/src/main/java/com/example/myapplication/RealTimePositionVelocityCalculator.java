@@ -16,6 +16,8 @@
 
 package com.example.myapplication;
 
+import static com.example.myapplication.MeasurementProvider.TAG;
+
 import android.graphics.Color;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssNavigationMessage;
@@ -101,7 +103,7 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                     new PseudorangePositionVelocityFromRealTimeEvents();
                         } catch (Exception e) {
                             Log.e(
-                                    MeasurementProvider.TAG,
+                                    TAG,
                                     " Exception in constructing PseudorangePositionFromRealTimeEvents : ",
                                     e);
                         }
@@ -154,7 +156,7 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                         (int) (location.getLongitude() * 1E7),
                                         (int) (location.getAltitude() * 1E7));
                             } catch (Exception e) {
-                                Log.e(MeasurementProvider.TAG, " Exception setting reference location : ", e);
+                                Log.e(TAG, " Exception setting reference location : ", e);
                             }
                         }
                     };
@@ -195,11 +197,9 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                                     + formattedLngDegree
                                                     + "altMeters = "
                                                     + formattedAltMeters);
-                                    mMainActivity.logData(
-                                            formattedLatDegree
-                                            + ", "
-                                            + formattedLngDegree
-                                    );
+                                    synchronized (mMainActivity) {
+                                        mMainActivity.logData(formattedLatDegree + ", " + formattedLngDegree);
+                                    }
 
                                     String formattedVelocityEastMps =
                                             new DecimalFormat("##.###").format(velSolution[0]);
@@ -372,6 +372,42 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
 
     @Override
     public void onGnssNavigationMessageReceived(GnssNavigationMessage event) {
+        /*
+        byte messagePrn = (byte) event.getSvid();
+        byte messageType = (byte) (event.getType() >> 8);
+        int subMessageId = event.getSubmessageId();
+        byte[] messageRawData = event.getData();
+
+        StringBuilder bitString = new StringBuilder();
+        for (byte b : messageRawData) {
+            for (int i = 7; i >= 0; i--) {
+                bitString.append((b >> i) & 1);
+            }
+        }
+
+        String pattern = "10001011";
+        int startIndex = bitString.indexOf(pattern);
+        int endIndex = startIndex + 316;
+        String extractedBits = bitString.substring(startIndex, endIndex);
+        StringBuilder resultBuilder = new StringBuilder();
+        int currentIndex = 0;
+        while (currentIndex < extractedBits.length()) {
+            String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
+            resultBuilder.append(bitsToKeep);
+            currentIndex += 32;
+        }
+
+        StringBuilder navMessage = new StringBuilder();
+        for (int i = 0; i < resultBuilder.length(); i += 4) {
+            String fourBits = resultBuilder.substring(i, i + 4);
+            int decimal = Integer.parseInt(fourBits, 2);
+            navMessage.append(Integer.toHexString(decimal));
+        }
+
+        String bitsToConvert = resultBuilder.substring(24, 24 + 19);
+        int tow = (int)((((Integer.parseInt(bitsToConvert, 2))*1.5)/6)*6);
+        Log.d(TAG, "SV: " + messagePrn + " Week: " + 2310 + " ToW: " +tow+ " NavigationMess: " + navMessage);
+        */
         if (event.getType() == GnssNavigationMessage.TYPE_GPS_L1CA) {
             mPseudorangePositionVelocityFromRealTimeEvents.parseHwNavigationMessageUpdates(event);
         }
@@ -390,7 +426,7 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
     }
 
     private void logEvent(String tag, String message, int color) {
-        String composedTag = MeasurementProvider.TAG + tag;
+        String composedTag = TAG + tag;
         Log.d(composedTag, message);
         logText(tag, message, color);
     }

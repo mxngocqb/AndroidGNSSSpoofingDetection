@@ -164,7 +164,6 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                         mUsefulSatellitesToReceiverMeasurements, mHardwareGpsNavMessageProto);
         if (useNavMessageFromSupl) {
             Log.d(TAG, "Using navigation message from SUPL server");
-
             if (mFirstSuplRequestNeeded
                     || (System.currentTimeMillis() - mLastReceivedSuplMessageTimeMillis)
                     > mDeltaTimeMillisToMakeSuplRequest) {
@@ -451,34 +450,10 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         int subMessageId = navigationMessage.getSubmessageId();
         byte[] messageRawData = navigationMessage.getData();
 
-        StringBuilder bitString = new StringBuilder();
-        for (byte b : messageRawData) {
-            for (int i = 7; i >= 0; i--) {
-                bitString.append((b >> i) & 1);
-            }
-        }
+        StringBuilder resultBuilder = processMessage(messageRawData);
+        StringBuilder navMessage = convertToHex(resultBuilder);
+        int tow = calculateTow(resultBuilder);
 
-        String pattern = "10001011";
-        int startIndex = bitString.indexOf(pattern);
-        int endIndex = startIndex + 316;
-        String extractedBits = bitString.substring(startIndex, endIndex);
-        StringBuilder resultBuilder = new StringBuilder();
-        int currentIndex = 0;
-        while (currentIndex < extractedBits.length()) {
-            String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
-            resultBuilder.append(bitsToKeep);
-            currentIndex += 32;
-        }
-
-        StringBuilder navMessage = new StringBuilder();
-        for (int i = 0; i < resultBuilder.length(); i += 4) {
-            String fourBits = resultBuilder.substring(i, i + 4);
-            int decimal = Integer.parseInt(fourBits, 2);
-            navMessage.append(Integer.toHexString(decimal));
-        }
-
-        String bitsToConvert = resultBuilder.substring(24, 24 + 19);
-        int tow = (int)((((Integer.parseInt(bitsToConvert, 2))*1.5)/6)*6);
         Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " +tow+ " NavigationMess: " + navMessage);
 
         if (messageType == 1) {
@@ -556,4 +531,50 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
     public double[] getPseudorangeResidualsMeters() {
         return mPseudorangeResidualsMeters;
     }
+
+    public static StringBuilder processMessage(byte[] messageRawData) {
+        StringBuilder bitString = buildBitString(messageRawData);
+
+        String pattern = "10001011";
+        int startIndex = bitString.indexOf(pattern);
+        int endIndex = startIndex + 316;
+        String extractedBits = bitString.substring(startIndex, endIndex);
+
+        StringBuilder resultBuilder = new StringBuilder();
+        int currentIndex = 0;
+        while (currentIndex < extractedBits.length()) {
+            String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
+            resultBuilder.append(bitsToKeep);
+            currentIndex += 32;
+        }
+
+        return resultBuilder;
+    }
+
+    private static StringBuilder buildBitString(byte[] messageRawData) {
+        StringBuilder bitString = new StringBuilder();
+        for (byte b : messageRawData) {
+            for (int i = 7; i >= 0; i--) {
+                bitString.append((b >> i) & 1);
+            }
+        }
+        return bitString;
+    }
+
+    private static StringBuilder convertToHex(StringBuilder resultBuilder) {
+        StringBuilder navMessage = new StringBuilder();
+        for (int i = 0; i < resultBuilder.length(); i += 4) {
+            String fourBits = resultBuilder.substring(i, i + 4);
+            int decimal = Integer.parseInt(fourBits, 2);
+            navMessage.append(Integer.toHexString(decimal));
+        }
+        return navMessage;
+    }
+
+    private static int calculateTow(StringBuilder resultBuilder) {
+        String bitsToConvert = resultBuilder.substring(24, 24 + 19);
+        int tow = (int)((((Integer.parseInt(bitsToConvert, 2))*1.5)/6)*6);
+        return tow;
+    }
+
 }
