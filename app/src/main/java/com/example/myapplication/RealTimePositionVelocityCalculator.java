@@ -70,6 +70,7 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
             mPseudorangePositionVelocityFromRealTimeEvents;
     private HandlerThread mPositionVelocityCalculationHandlerThread;
     private Handler mMyPositionVelocityCalculationHandler;
+
     private int mCurrentColor = Color.rgb(0x4a, 0x5f, 0x70);
     private int mCurrentColorIndex = 0;
     private boolean mAllowShowingRawResults = false;
@@ -372,42 +373,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
 
     @Override
     public void onGnssNavigationMessageReceived(GnssNavigationMessage event) {
-        /*
-        byte messagePrn = (byte) event.getSvid();
-        byte messageType = (byte) (event.getType() >> 8);
-        int subMessageId = event.getSubmessageId();
-        byte[] messageRawData = event.getData();
-
-        StringBuilder bitString = new StringBuilder();
-        for (byte b : messageRawData) {
-            for (int i = 7; i >= 0; i--) {
-                bitString.append((b >> i) & 1);
-            }
-        }
-
-        String pattern = "10001011";
-        int startIndex = bitString.indexOf(pattern);
-        int endIndex = startIndex + 316;
-        String extractedBits = bitString.substring(startIndex, endIndex);
-        StringBuilder resultBuilder = new StringBuilder();
-        int currentIndex = 0;
-        while (currentIndex < extractedBits.length()) {
-            String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
-            resultBuilder.append(bitsToKeep);
-            currentIndex += 32;
-        }
-
-        StringBuilder navMessage = new StringBuilder();
-        for (int i = 0; i < resultBuilder.length(); i += 4) {
-            String fourBits = resultBuilder.substring(i, i + 4);
-            int decimal = Integer.parseInt(fourBits, 2);
-            navMessage.append(Integer.toHexString(decimal));
-        }
-
-        String bitsToConvert = resultBuilder.substring(24, 24 + 19);
-        int tow = (int)((((Integer.parseInt(bitsToConvert, 2))*1.5)/6)*6);
-        Log.d(TAG, "SV: " + messagePrn + " Week: " + 2310 + " ToW: " +tow+ " NavigationMess: " + navMessage);
-        */
         if (event.getType() == GnssNavigationMessage.TYPE_GPS_L1CA) {
             mPseudorangePositionVelocityFromRealTimeEvents.parseHwNavigationMessageUpdates(event);
         }

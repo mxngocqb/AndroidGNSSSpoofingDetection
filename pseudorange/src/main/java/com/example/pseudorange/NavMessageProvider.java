@@ -1,4 +1,7 @@
 package com.example.pseudorange;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,5 +55,25 @@ public class NavMessageProvider {
         }
 
         return result;
+    }
+
+    public String extractNavigationMessage(String navMessageData) {
+        try {
+            JSONObject jsonObject = new JSONObject(navMessageData);
+            return jsonObject.getString("navigationMessage");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String extractSignature(String navMessageData) {
+        try {
+            JSONObject jsonObject = new JSONObject(navMessageData);
+            return jsonObject.getString("signature");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

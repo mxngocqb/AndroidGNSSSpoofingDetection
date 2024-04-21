@@ -90,7 +90,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
 
     NavMessageProvider navMessageProvider = new NavMessageProvider();
-    NavMessageRSA  navMessageRSA = new NavMessageRSA();
+    NavMessageRSA navMessageRSA = new NavMessageRSA();
     private long mLargestTowNs = Long.MIN_VALUE;
     private double mArrivalTimeSinceGPSWeekNs = 0.0;
     private int mDayOfYear1To366 = 0;
@@ -445,6 +445,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
      * recent {@link GpsNavMessageProto}.
      */
     public void parseHwNavigationMessageUpdates(GnssNavigationMessage navigationMessage) {
+        // Data from hardware device
         byte messagePrn = (byte) navigationMessage.getSvid();
         byte messageType = (byte) (navigationMessage.getType() >> 8);
         int subMessageId = navigationMessage.getSubmessageId();
@@ -454,7 +455,35 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         StringBuilder navMessage = convertToHex(resultBuilder);
         int tow = calculateTow(resultBuilder);
 
-        Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " +tow+ " NavigationMess: " + navMessage);
+        Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " + tow +
+                " NavigationMess: " + navMessage);
+
+        // Data from EphProvider
+        StringBuilder requestString = new StringBuilder();
+        requestString.append("api/NavMessages");
+        requestString.append("/").append(messagePrn);
+        requestString.append("/").append(mGpsWeekNumber);
+        requestString.append("/").append(tow);
+        boolean verified = false;
+        if (mGpsWeekNumber != 0) {
+            String navMessageData = navMessageProvider.fetchData(requestString.toString());
+            if (navMessageData != null) {
+                String navMessageFromEphProvider = navMessageProvider.
+                        extractNavigationMessage(navMessageData);
+                String signatureFromEphProvider = navMessageProvider.
+                        extractSignature(navMessageData);
+                verified = navMessageRSA.verifySignature(navMessageFromEphProvider, signatureFromEphProvider);
+
+                if (verified && navMessage.toString().equals(navMessageFromEphProvider) &&
+                        (mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] != null)) {
+                    Log.d(TAG, "EphProvider: continue use satellite " + messagePrn);
+                } else {
+                    Log.d(TAG, "EphProvider: reject use satellite " + messagePrn);
+                    mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
+                }
+            }
+        }
+
 
         if (messageType == 1) {
             mGpsNavigationMessageStore.onNavMessageReported(
@@ -533,11 +562,16 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
     }
 
     public static StringBuilder processMessage(byte[] messageRawData) {
-        StringBuilder bitString = buildBitString(messageRawData);
+        StringBuilder bitString = new StringBuilder();
+        for (byte b : messageRawData) {
+            for (int i = 7; i >= 0; i--) {
+                bitString.append((b >> i) & 1);
+            }
+        }
 
         String pattern = "10001011";
         int startIndex = bitString.indexOf(pattern);
-        int endIndex = startIndex + 316;
+        int endIndex = startIndex + 312;
         String extractedBits = bitString.substring(startIndex, endIndex);
 
         StringBuilder resultBuilder = new StringBuilder();
@@ -549,16 +583,6 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         }
 
         return resultBuilder;
-    }
-
-    private static StringBuilder buildBitString(byte[] messageRawData) {
-        StringBuilder bitString = new StringBuilder();
-        for (byte b : messageRawData) {
-            for (int i = 7; i >= 0; i--) {
-                bitString.append((b >> i) & 1);
-            }
-        }
-        return bitString;
     }
 
     private static StringBuilder convertToHex(StringBuilder resultBuilder) {
@@ -573,7 +597,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
     private static int calculateTow(StringBuilder resultBuilder) {
         String bitsToConvert = resultBuilder.substring(24, 24 + 19);
-        int tow = (int)((((Integer.parseInt(bitsToConvert, 2))*1.5)/6)*6);
+        int tow = (int) ((((Integer.parseInt(bitsToConvert, 2)) * 1.5) / 6) * 6) - 1;
         return tow;
     }
 
