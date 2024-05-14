@@ -6,4 +6,5 @@ The proposed solution combines the advantages of both methods. The system will b
 First of all, part of the system will focus on identifying fake signals. If a signal is determined to be authentic, the system will use the digital signature to generate a signature for the NAV.
 
 Next, the receiver will receive navigation data from the supply system, authenticate it with a digital signature and then compare it with the navigation data it received. If any discrepancies are detected, the instrument removes the corresponding satellite from the Position, Velocity and Time (PVT) calculation. As a result, the device will be able to eliminate the influence of spurious signals on the PVT.
+
 <img src="https://github.com/mxngocqb/AndroidGNSSSpoofingDetection/blob/master/picture/solution.jpg" alt="Solution image" width="900" />
