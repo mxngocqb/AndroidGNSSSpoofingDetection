@@ -1,6 +1,6 @@
 # GNSS Spoofing Detection for Mobile devices
 This is my research project in the field of GNSS. This project provides accurate PVT data to the end user.
-## Operating principle of GNSS signal tamper detection program.
+## Principle
 The proposed solution combines the advantages of both methods. The system will be divided into two parts:
 
 First of all, part of the system will focus on identifying fake signals. If a signal is determined to be authentic, the system will use the digital signature to generate a signature for the NAV.
