@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
@@ -31,7 +32,8 @@ public class MainActivity extends AppCompatActivity {
     private MeasurementProvider mMeasurementProvider;
     private RealTimePositionVelocityCalculator mRealTimePositionVelocityCalculator;
 
-    TextView show_log;
+    TextView showPosition;
+    TextView showStatus;
     private Timer watchdogTimer;
     private byte keepAliveClock = '0';
 
@@ -67,10 +69,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        show_log = (TextView) findViewById(R.id.text_view);
-        TableLayout tableLayout = findViewById(R.id.table_view);
+        showPosition = (TextView) findViewById(R.id.text_view);
+        showStatus = (TextView) findViewById(R.id.text_view2);
         requestPermission(this);
-        populateTable(tableLayout);
     }
 
     private boolean hasPermissions(Activity activity) {
@@ -122,8 +123,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void logData(String message) {
-        show_log.setText(message);
+    public void setShowPosition(String message) {
+        showPosition.setText(message);
     }
 
     private void watchdogTimerCreate() {
@@ -148,40 +149,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void populateTable(TableLayout tableLayout) {
-        // Add header row
-        TableRow headerRow = new TableRow(this);
-        TextView header1 = new TextView(this);
-        TextView header2 = new TextView(this);
-        header1.setText("Satellite");
-        header2.setText("Status");
-        header1.setPadding(16, 0, 70, 0);
-        header2.setPadding(16, 0, 70, 0);
-        header1.setTextSize(16);
-        header2.setTextSize(16);
-        headerRow.addView(header1);
-        headerRow.addView(header2);
-        tableLayout.addView(headerRow);
-
-        // Add data rows
-        for (int i = 1; i <= 32; i++) {
-            TableRow tableRow = new TableRow(this);
-
-            TextView satelliteView = new TextView(this);
-            TextView statusView = new TextView(this);
-
-            satelliteView.setText(String.valueOf(i));
-            statusView.setText("Unknown");  // Replace with actual status if available
-
-            satelliteView.setPadding(16, 0, 70, 0);
-            statusView.setPadding(16, 0, 70, 0);
-            satelliteView.setTextSize(14);
-            statusView.setTextSize(14);
-
-            tableRow.addView(satelliteView);
-            tableRow.addView(statusView);
-
-            tableLayout.addView(tableRow);
+    public void setShowStatus(String[] stateOfSatellite) {
+        StringBuilder status = new StringBuilder();
+        for (int i = 0; i<stateOfSatellite.length; i++){
+            if (stateOfSatellite[i] != null){
+                status.append("satellite:").append(i+1).append(" status: ").append(stateOfSatellite[i]).append("\n");
+            }
         }
+        showStatus.setText(status);
     }
 }

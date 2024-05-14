@@ -18,6 +18,8 @@ package com.example.myapplication;
 
 import static com.example.myapplication.MeasurementProvider.TAG;
 
+import android.content.Intent;
+import android.content.Context;
 import android.graphics.Color;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssNavigationMessage;
@@ -41,8 +43,7 @@ import java.util.concurrent.TimeUnit;
  * A class that handles real time position and velocity calculation, passing {@link
  * GnssMeasurementsEvent} instances to the {@link PseudorangePositionVelocityFromRealTimeEvents}
  * whenever a new raw measurement is received in order to compute a new position solution. The
- * computed position and velocity solutions are passed to the {@link ResultFragment} to be
- * visualized.
+ * computed position and velocity solutions
  */
 public class RealTimePositionVelocityCalculator implements MeasurementListener {
     /**
@@ -88,6 +89,10 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
     private double[] mGroundTruth = null;
     private int mPositionSolutionCount = 0;
 
+    private Context context;
+
+
+
     public RealTimePositionVelocityCalculator() {
         mPositionVelocityCalculationHandlerThread =
                 new HandlerThread("Position From Realtime Pseudoranges");
@@ -104,13 +109,10 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                     new PseudorangePositionVelocityFromRealTimeEvents();
                         } catch (Exception e) {
                             Log.e(
-                                    TAG,
-                                    " Exception in constructing PseudorangePositionFromRealTimeEvents : ",
-                                    e);
+                                    TAG, " Exception in constructing PseudorangePositionFromRealTimeEvents : ", e);
                         }
                     }
                 };
-
         mMyPositionVelocityCalculationHandler.post(r);
     }
 
@@ -161,9 +163,7 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                             }
                         }
                     };
-
             mMyPositionVelocityCalculationHandler.post(r);
-
         } else if (location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
             if (mAllowShowingRawResults) {
                 final Runnable r =
@@ -180,6 +180,9 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                 double[] pvUncertainty =
                                         mPseudorangePositionVelocityFromRealTimeEvents
                                                 .getPositionVelocityUncertaintyEnu();
+                                String[] stateOfSatellite =
+                                        mPseudorangePositionVelocityFromRealTimeEvents.getStateOfSatellite();
+
                                 if (Double.isNaN(posSolution[0])) {
                                     logPositionFromRawDataEvent("No Position Calculated Yet");
                                     logPositionError("And no offset calculated yet...");
@@ -198,8 +201,10 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                                     + formattedLngDegree
                                                     + "altMeters = "
                                                     + formattedAltMeters);
+
                                     synchronized (mMainActivity) {
-                                        mMainActivity.logData(formattedLatDegree + ", " + formattedLngDegree);
+                                        mMainActivity.setShowPosition(formattedLatDegree + ", " + formattedLngDegree);
+                                        mMainActivity.setShowStatus(stateOfSatellite);
                                     }
 
                                     String formattedVelocityEastMps =
@@ -267,14 +272,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                     logVelocityError("speed offset = " + formattedSpeedOffsetMps + " mps");
                                 }
                                 logLocationEvent("onLocationChanged: " + location);
-                                if (!Double.isNaN(posSolution[0])) {
-                                    updateMapViewWithPositions(
-                                            posSolution[0],
-                                            posSolution[1],
-                                            location.getLatitude(),
-                                            location.getLongitude(),
-                                            location.getTime());
-                                }
                             }
                         };
                 mMyPositionVelocityCalculationHandler.post(r);
@@ -282,20 +279,8 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
         }
     }
 
-//  private void clearMapMarkers() {
-//    mMapFragment.clearMarkers();
-//  }
     public void setMainActivity(MainActivity mainActivity) {
         this.mMainActivity = mainActivity;
-    }
-    private void updateMapViewWithPositions(
-            double latDegRaw,
-            double lngDegRaw,
-            double latDegDevice,
-            double lngDegDevice,
-            long timeMillis) {
-//    mMapFragment.updateMapViewWithPositions(
-//        latDegRaw, lngDegRaw, latDegDevice, lngDegDevice, timeMillis);
     }
 
     @Override
@@ -309,13 +294,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                 new Runnable() {
                     @Override
                     public void run() {
-//                        mMainActivity.runOnUiThread(
-//                                new Runnable() {
-//                                    @Override
-//                                    public void run() {
-//                                        mPlotFragment.updateCnoTab(event);
-//                                    }
-//                                });
                         if (mPseudorangePositionVelocityFromRealTimeEvents == null) {
                             return;
                         }

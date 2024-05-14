@@ -92,6 +92,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
     private GpsMeasurement[] mUsefulSatellitesToReceiverMeasurements =
             new GpsMeasurement[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
     private boolean[] lockFlags = new boolean[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
+    private String[] statusOfSatellite = new String[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
     private Long[] mUsefulSatellitesToTowNs =
             new Long[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
 
@@ -163,7 +164,8 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                                 measurement.getPseudorangeRateUncertaintyMetersPerSecond());
                 if ( lockFlags[measurement.getSvid() - 1] == false) {
                     mUsefulSatellitesToReceiverMeasurements[measurement.getSvid() - 1] = gpsReceiverMeasurement;
-                    Log.d(TAG, measurement.getSvid() + " in used");
+                    statusOfSatellite[measurement.getSvid() - 1] = "Using";
+                    Log.d(TAG, "Using " + measurement.getSvid());
                 }
             }
         }
@@ -489,9 +491,11 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                 if (verified && navMessage.toString().equals(navMessageFromEphProvider) &&
                         (mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] != null)) {
                     Log.d(TAG, "EphProvider: continue use satellite " + messagePrn);
+                    statusOfSatellite[navigationMessage.getSvid() - 1] = "Using";
                 } else {
-                    Log.d(TAG, "EphProvider invalid navigation data: reject satellite " + messagePrn);
                     mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
+                    Log.d(TAG, "EphProvider invalid navigation data: reject satellite " + messagePrn);
+                    statusOfSatellite[navigationMessage.getSvid() - 1] = "Rejected";
                     lockFlags[navigationMessage.getSvid() - 1] = true;
                     timer.schedule(new TimerTask() {
                         @Override
@@ -503,9 +507,10 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                 }
 
             } else {
-                Log.d(TAG, "EphProvider 404: reject satellite " + messagePrn );
                 mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
+                statusOfSatellite[navigationMessage.getSvid() - 1] = "Rejected";
                 lockFlags[navigationMessage.getSvid() - 1] = true;
+                Log.d(TAG, "EphProvider 404: reject satellite " + messagePrn );
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
@@ -576,6 +581,10 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
      */
     public double[] getVelocitySolutionEnuMps() {
         return mVelocitySolutionEnuMps;
+    }
+
+    public String[] getStateOfSatellite() {
+        return statusOfSatellite;
     }
 
     /**
