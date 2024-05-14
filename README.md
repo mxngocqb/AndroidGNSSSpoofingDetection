@@ -12,7 +12,7 @@ Next, the receiver will receive navigation data from the supply system, authenti
 You can access the server that provide accurate Navigation Message at the following URL: [ace-rationally-flounder.ngrok-free.app](https://ace-rationally-flounder.ngrok-free.app)
 For detailed , please visit the following link: [GNSS Spoofing Detection Backend](https://github.com/mxngocqb/RSA)
 ## User manual
-For implementing GNSS spoofing detection, download the pseudorange module from [here](https://github.com/mxngocqb/AndroidGNSSpoofingDetection/tree/master/pseudorange), which includes the essential files: `MeasurementListener`, `MeasurementProvider`, and `RealtimePositionsVelocityCalculator`. Additionally, explore the sample project provided [here](https://github.com/mxngocqb/AndroidGNSSpoofingDetection/tree/master/app) to see how these components integrate into an Android application.
+For implementing GNSS spoofing detection, download the pseudorange module from [here](https://github.com/mxngocqb/AndroidGNSSpoofingDetection/tree/master/pseudorange) and the essential files: `MeasurementListener`, `MeasurementProvider`, and `RealtimePositionsVelocityCalculator` like my example project [here](https://github.com/mxngocqb/AndroidGNSSpoofingDetection/tree/master/app).
 
 
 
