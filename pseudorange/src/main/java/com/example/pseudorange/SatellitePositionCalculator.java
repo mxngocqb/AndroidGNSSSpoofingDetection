@@ -73,6 +73,7 @@ public class SatellitePositionCalculator {
             0.0 /* user velocity x*/,
             0.0 /* user velocity y*/,
             0.0 /* user velocity z */);
+
     for (int i = 0; i < NUMBER_OF_ITERATIONS_FOR_SAT_POS_CALCULATION; i++) {
       calculateSatellitePositionAndVelocity(
           ephemerisProto,
@@ -82,6 +83,7 @@ public class SatellitePositionCalculator {
           satPosAndVel);
       computeUserToSatelliteRangeAndRangeRate(userPosAndVel, satPosAndVel, userSatRangeAndRate);
     }
+
     return satPosAndVel;
   }
 

@@ -31,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private MeasurementProvider mMeasurementProvider;
     private RealTimePositionVelocityCalculator mRealTimePositionVelocityCalculator;
-
     TextView showPosition;
     TextView showStatus;
     private Timer watchdogTimer;
@@ -109,8 +108,8 @@ public class MainActivity extends AppCompatActivity {
         mMeasurementProvider.registerMeasurements();
         mMeasurementProvider.registerLocation();
         mMeasurementProvider.registerNavigation();
-        mMeasurementProvider.registerGnssStatus();
-        mMeasurementProvider.registerNmea();
+//        mMeasurementProvider.registerGnssStatus();
+//        mMeasurementProvider.registerNmea();
 
 
         java.lang.reflect.Method method;

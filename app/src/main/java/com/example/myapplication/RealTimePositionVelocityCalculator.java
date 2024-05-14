@@ -91,8 +91,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
 
     private Context context;
 
-
-
     public RealTimePositionVelocityCalculator() {
         mPositionVelocityCalculationHandlerThread =
                 new HandlerThread("Position From Realtime Pseudoranges");
@@ -115,16 +113,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                 };
         mMyPositionVelocityCalculationHandler.post(r);
     }
-
-//  private UIResultComponent uiResultComponent;
-//
-//  public synchronized UIResultComponent getUiResultComponent() {
-//    return uiResultComponent;
-//  }
-//
-//  public synchronized void setUiResultComponent(UIResultComponent value) {
-//    uiResultComponent = value;
-//  }
 
     @Override
     public void onProviderEnabled(String provider) {
@@ -204,6 +192,9 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
 
                                     synchronized (mMainActivity) {
                                         mMainActivity.setShowPosition(formattedLatDegree + ", " + formattedLngDegree);
+                                    }
+
+                                    synchronized (mMainActivity) {
                                         mMainActivity.setShowStatus(stateOfSatellite);
                                     }
 

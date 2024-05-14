@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +63,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
     private static final int C_TO_N0_THRESHOLD_DB_HZ = 18;
 
-    private static final int BLOCK_NAV_MINUTES = 1;
+    private static final int BLOCK_NAV_MINUTES = 2;
 
     private static final String SUPL_SERVER_NAME = "supl.google.com";
     private static final int SUPL_SERVER_PORT = 7276;
@@ -120,6 +121,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
             Log.d(TAG, " No reference Location ..... no position is calculated");
             return;
         }
+
         for (int i = 0; i < GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES; i++) {
             mUsefulSatellitesToReceiverMeasurements[i] = null;
             mUsefulSatellitesToTowNs[i] = null;
@@ -152,20 +154,18 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                 if (receivedGPSTowNs > mLargestTowNs) {
                     mLargestTowNs = receivedGPSTowNs;
                 }
-                mUsefulSatellitesToTowNs[measurement.getSvid() - 1] = receivedGPSTowNs;
-                GpsMeasurement gpsReceiverMeasurement =
-                        new GpsMeasurement(
-                                (long) mArrivalTimeSinceGPSWeekNs,
-                                measurement.getAccumulatedDeltaRangeMeters(),
-                                isAccumulatedDeltaRangeStateValid(measurement.getAccumulatedDeltaRangeState()),
-                                measurement.getPseudorangeRateMetersPerSecond(),
-                                measurement.getCn0DbHz(),
-                                measurement.getAccumulatedDeltaRangeUncertaintyMeters(),
-                                measurement.getPseudorangeRateUncertaintyMetersPerSecond());
-                if ( lockFlags[measurement.getSvid() - 1] == false) {
+                if ((!lockFlags[measurement.getSvid() - 1]) && ("Using".equals(statusOfSatellite[measurement.getSvid() - 1]))) {
+                    mUsefulSatellitesToTowNs[measurement.getSvid() - 1] = receivedGPSTowNs;
+                    GpsMeasurement gpsReceiverMeasurement =
+                            new GpsMeasurement(
+                                    (long) mArrivalTimeSinceGPSWeekNs,
+                                    measurement.getAccumulatedDeltaRangeMeters(),
+                                    isAccumulatedDeltaRangeStateValid(measurement.getAccumulatedDeltaRangeState()),
+                                    measurement.getPseudorangeRateMetersPerSecond(),
+                                    measurement.getCn0DbHz(),
+                                    measurement.getAccumulatedDeltaRangeUncertaintyMeters(),
+                                    measurement.getPseudorangeRateUncertaintyMetersPerSecond());
                     mUsefulSatellitesToReceiverMeasurements[measurement.getSvid() - 1] = gpsReceiverMeasurement;
-                    statusOfSatellite[measurement.getSvid() - 1] = "Using";
-                    Log.d(TAG, "Using " + measurement.getSvid());
                 }
             }
         }
@@ -190,7 +190,6 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                     return;
                 }
             }
-
         } else {
             Log.d(TAG, "Using navigation message from the GPS receiver");
             mGpsNavMessageProtoUsed = mHardwareGpsNavMessageProto;
@@ -203,6 +202,11 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                     && !navMessageProtoContainsSvid(mGpsNavMessageProtoUsed, i + 1)) {
                 mUsefulSatellitesToReceiverMeasurements[i] = null;
                 mUsefulSatellitesToTowNs[i] = null;
+                statusOfSatellite[i] = "Not track";
+            }
+            if (mUsefulSatellitesToReceiverMeasurements[i] == null){
+                if (!Objects.equals(statusOfSatellite[i], "Rejected"))
+                    statusOfSatellite[i] = null;
             }
         }
 
@@ -224,6 +228,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                 double[] pseudorangeResidualMeters =
                         GpsMathOperations.createAndFillArray(
                                 GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES, Double.NaN);
+
                 performPositionVelocityComputationEcef(
                         mUserPositionVelocityLeastSquareCalculator,
                         mUsefulSatellitesToReceiverMeasurements,
@@ -426,7 +431,8 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                                 useNavMessageFromSupl = false;
                                 break;
                             }
-                            useNavMessageFromSupl = true;
+                             useNavMessageFromSupl = true;
+//                            useNavMessageFromSupl = false;
                         }
                         if (useNavMessageFromSupl == true) {
                             break;
@@ -465,38 +471,53 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         byte[] messageRawData = navigationMessage.getData();
 
         StringBuilder resultBuilder = processMessage(messageRawData);
-        StringBuilder navMessage = convertToHex(resultBuilder);
-        int tow = calculateTow(resultBuilder);
+        if (resultBuilder != null) {
+            StringBuilder navMessage = convertToHex(resultBuilder);
+//            String navMessage = bytesToHex(messageRawData);
+            int tow = calculateTow(resultBuilder);
 
-        Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " + tow +
-                " NavigationMess: " + navMessage);
+            Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " + tow +
+                    " NavigationMess: " + navMessage);
 
-        // Data from EphProvider
-        StringBuilder requestString = new StringBuilder();
-        requestString.append("api/NavMessages");
-        requestString.append("/").append(messagePrn);
-        requestString.append("/").append(mGpsWeekNumber);
-        requestString.append("/").append(tow);
-        boolean verified = false;
+            // Data from EphProvider
+            StringBuilder requestString = new StringBuilder();
+            requestString.append("api/NavMessages");
+            requestString.append("/").append(messagePrn);
+            requestString.append("/").append(mGpsWeekNumber);
+            requestString.append("/").append(tow);
+            boolean verified = false;
 
-        if (mGpsWeekNumber != 0) {
-            String navMessageData = navMessageProvider.fetchData(requestString.toString());
-            if (navMessageData != null) {
-                String navMessageFromEphProvider = navMessageProvider.
-                        extractNavigationMessage(navMessageData);
-                String signatureFromEphProvider = navMessageProvider.
-                        extractSignature(navMessageData);
-                verified = navMessageRSA.verifySignature(navMessageFromEphProvider, signatureFromEphProvider);
+            if (mGpsWeekNumber != 0) {
+                String navMessageData = navMessageProvider.fetchData(requestString.toString());
+                if (navMessageData != null) {
+                    String navMessageFromEphProvider = navMessageProvider.
+                            extractNavigationMessage(navMessageData);
+                    String signatureFromEphProvider = navMessageProvider.
+                            extractSignature(navMessageData);
+                    verified = navMessageRSA.verifySignature(navMessageFromEphProvider, signatureFromEphProvider);
 
-                if (verified && navMessage.toString().equals(navMessageFromEphProvider) &&
-                        (mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] != null)) {
-                    Log.d(TAG, "EphProvider: continue use satellite " + messagePrn);
-                    statusOfSatellite[navigationMessage.getSvid() - 1] = "Using";
+                    if (verified && navMessage.toString().equals(navMessageFromEphProvider)) {
+                        Log.d(TAG, "EphProvider: continue use satellite " + messagePrn);
+                        statusOfSatellite[navigationMessage.getSvid() - 1] = "Using";
+                    } else {
+                        mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
+                        Log.d(TAG, "EphProvider invalid navigation data: reject satellite " + messagePrn);
+                        statusOfSatellite[navigationMessage.getSvid() - 1] = "Rejected";
+                        lockFlags[navigationMessage.getSvid() - 1] = true;
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                lockFlags[navigationMessage.getSvid() - 1] = false;
+                                Log.d(TAG, "EphProvider: unlock satellite " + (navigationMessage.getSvid() - 1 + 1));
+                            }
+                        }, BLOCK_NAV_MINUTES * 60 * 1000);
+                    }
+
                 } else {
                     mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
-                    Log.d(TAG, "EphProvider invalid navigation data: reject satellite " + messagePrn);
                     statusOfSatellite[navigationMessage.getSvid() - 1] = "Rejected";
                     lockFlags[navigationMessage.getSvid() - 1] = true;
+                    Log.d(TAG, "EphProvider 404: reject satellite " + messagePrn);
                     timer.schedule(new TimerTask() {
                         @Override
                         public void run() {
@@ -506,20 +527,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                     }, BLOCK_NAV_MINUTES * 60 * 1000);
                 }
 
-            } else {
-                mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
-                statusOfSatellite[navigationMessage.getSvid() - 1] = "Rejected";
-                lockFlags[navigationMessage.getSvid() - 1] = true;
-                Log.d(TAG, "EphProvider 404: reject satellite " + messagePrn );
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        lockFlags[navigationMessage.getSvid() - 1] = false;
-                        Log.d(TAG, "EphProvider: unlock satellite " + (navigationMessage.getSvid() - 1 + 1) );
-                    }
-                }, BLOCK_NAV_MINUTES * 60 * 1000);
             }
-
         }
 
 
@@ -613,18 +621,32 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
         String pattern = "10001011";
         int startIndex = bitString.indexOf(pattern);
+
         int endIndex = startIndex + 312;
-        String extractedBits = bitString.substring(startIndex, endIndex);
 
-        StringBuilder resultBuilder = new StringBuilder();
-        int currentIndex = 0;
-        while (currentIndex < extractedBits.length()) {
-            String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
-            resultBuilder.append(bitsToKeep);
-            currentIndex += 32;
+        if ((startIndex > 50) ||( startIndex < 0)) {
+            Log.d(TAG, "processMessage: NULL");
+            return null;
+        }else {
+            String extractedBits = bitString.substring(startIndex, endIndex);
+            StringBuilder resultBuilder = new StringBuilder();
+            int currentIndex = 0;
+            while (currentIndex < extractedBits.length()) {
+                String bitsToKeep = extractedBits.substring(currentIndex, currentIndex + 24);
+                resultBuilder.append(bitsToKeep);
+                currentIndex += 32;
+            }
+            return resultBuilder;
         }
+    }
 
-        return resultBuilder;
+    public static String  bytesToHex(byte[] data){
+        StringBuilder hexString = new StringBuilder(2 * data.length);
+        for (byte b : data) {
+            String hex = String.format("%02x", b);
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
     private static StringBuilder convertToHex(StringBuilder resultBuilder) {
@@ -639,7 +661,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
     private static int calculateTow(StringBuilder resultBuilder) {
         String bitsToConvert = resultBuilder.substring(24, 24 + 19);
-        int tow = (int) ((((Integer.parseInt(bitsToConvert, 2)) * 1.5) / 6) * 6);
+        int tow = (int) ((((Integer.parseInt(bitsToConvert, 2)) * 1.5) / 6) * 6) - 1;
         return tow;
     }
 
