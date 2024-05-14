@@ -138,8 +138,8 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
 
     /**
      * Update the reference location in {@link PseudorangePositionVelocityFromRealTimeEvents} if the
-     * received location is a network location. Otherwise, update the {@link ResultFragment} to
-     * visualize both GPS location computed by the device and the one computed from the raw data.
+     * received location is a network location visualize both GPS location computed by the device
+     * and the one computed from the raw data.
      */
     @Override
     public void onLocationChanged(final Location location) {
@@ -274,8 +274,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                             location.getLatitude(),
                                             location.getLongitude(),
                                             location.getTime());
-                                } else {
-//                                    clearMapMarkers();
                                 }
                             }
                         };
@@ -324,9 +322,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                         try {
                             if (mResidualPlotStatus != RESIDUAL_MODE_DISABLED
                                     && mResidualPlotStatus != RESIDUAL_MODE_AT_INPUT_LOCATION) {
-                                // The position at last epoch is used for the residual analysis.
-                                // This is happening by updating the ground truth for pseudorange before using the
-                                // new arriving pseudoranges to compute a new position.
                                 mPseudorangePositionVelocityFromRealTimeEvents
                                         .setCorrectedResidualComputationTruthLocationLla(mGroundTruth);
                             }
@@ -334,31 +329,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                     .computePositionVelocitySolutionsFromRawMeas(event);
                             mPseudorangePositionVelocityFromRealTimeEvents.getPseudorangeResidualsMeters();
                             GpsMathOperations.createAndFillArray(GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES, Double.NaN);
-                            // Running on main thread instead of in parallel will improve the thread safety
-//                            if (mResidualPlotStatus != RESIDUAL_MODE_DISABLED) {
-//                                mMainActivity.runOnUiThread(
-//                                        new Runnable() {
-//                                            @Override
-//                                            public void run() {
-//                                                mPlotFragment.updatePseudorangeResidualTab(
-//                                                        mPseudorangePositionVelocityFromRealTimeEvents
-//                                                                .getPseudorangeResidualsMeters(),
-//                                                        TimeUnit.NANOSECONDS.toSeconds(event.getClock().getTimeNanos()));
-//                                            }
-//                                        });
-//                            } else {
-//                                mMainActivity.runOnUiThread(
-//                                        new Runnable() {
-//                                            @Override
-//                                            public void run() {
-//                                                // Here we create gaps when the residual plot is disabled
-//                                                mPlotFragment.updatePseudorangeResidualTab(
-//                                                        GpsMathOperations.createAndFillArray(
-//                                                                GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES, Double.NaN),
-//                                                        TimeUnit.NANOSECONDS.toSeconds(event.getClock().getTimeNanos()));
-//                                            }
-//                                        });
-//                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -373,8 +343,19 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
 
     @Override
     public void onGnssNavigationMessageReceived(GnssNavigationMessage event) {
+        /*
         if (event.getType() == GnssNavigationMessage.TYPE_GPS_L1CA) {
             mPseudorangePositionVelocityFromRealTimeEvents.parseHwNavigationMessageUpdates(event);
+        }*/
+        if (event.getType() == GnssNavigationMessage.TYPE_GPS_L1CA) {
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    mPseudorangePositionVelocityFromRealTimeEvents.parseHwNavigationMessageUpdates(event);
+                }
+            };
+            long delayMillis = 10000;
+            mMyPositionVelocityCalculationHandler.postDelayed(r, delayMillis);
         }
     }
 
@@ -495,28 +476,6 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
             mPositionSolutionCount = 0;
         }
     }
-
-//    /**
-//     * Sets {@link MapFragment} for receiving WLS location update
-//     */
-//    public void setMapFragment(MapFragment mapFragment) {
-//        this.mMapFragment = mapFragment;
-//    }
-//
-//    /**
-//     * Sets {@link PlotFragment} for receiving Gnss measurement and residual computation results for
-//     * plot
-//     */
-//    public void setPlotFragment(PlotFragment plotFragment) {
-//        this.mPlotFragment = plotFragment;
-//    }
-//
-//    /**
-//     * Sets {@link MainActivity} for running some UI tasks on UI thread
-//     */
-//    public void setMainActivity(MainActivity mainActivity) {
-//        this.mMainActivity = mainActivity;
-//    }
 
     /**
      * Sets the ground truth mode in {@link PseudorangePositionVelocityFromRealTimeEvents} for

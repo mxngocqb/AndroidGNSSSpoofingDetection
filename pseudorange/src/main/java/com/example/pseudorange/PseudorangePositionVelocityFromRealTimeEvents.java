@@ -24,6 +24,7 @@ import android.location.GnssStatus;
 import android.location.cts.nano.Ephemeris.GpsEphemerisProto;
 import android.location.cts.nano.Ephemeris.GpsNavMessageProto;
 import android.location.cts.suplClient.SuplRrlpController;
+import android.os.Looper;
 import android.util.Log;
 
 import com.example.pseudorange.Ecef2EnuConverter.EnuValues;
@@ -36,7 +37,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Handler;
 
 import org.apache.commons.codec.binary.Hex;
 import org.json.JSONObject;
@@ -57,6 +61,8 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
     private static final int MINIMUM_NUMBER_OF_USEFUL_SATELLITES = 4;
 
     private static final int C_TO_N0_THRESHOLD_DB_HZ = 18;
+
+    private static final int BLOCK_NAV_MINUTES = 1;
 
     private static final String SUPL_SERVER_NAME = "supl.google.com";
     private static final int SUPL_SERVER_PORT = 7276;
@@ -85,9 +91,11 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
             new UserPositionVelocityWeightedLeastSquare(mPseudorangeSmoother);
     private GpsMeasurement[] mUsefulSatellitesToReceiverMeasurements =
             new GpsMeasurement[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
+    private boolean[] lockFlags = new boolean[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
     private Long[] mUsefulSatellitesToTowNs =
             new Long[GpsNavigationMessageStore.MAX_NUMBER_OF_SATELLITES];
 
+    private Timer timer = new Timer();
 
     NavMessageProvider navMessageProvider = new NavMessageProvider();
     NavMessageRSA navMessageRSA = new NavMessageRSA();
@@ -153,7 +161,10 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                                 measurement.getCn0DbHz(),
                                 measurement.getAccumulatedDeltaRangeUncertaintyMeters(),
                                 measurement.getPseudorangeRateUncertaintyMetersPerSecond());
-                mUsefulSatellitesToReceiverMeasurements[measurement.getSvid() - 1] = gpsReceiverMeasurement;
+                if ( lockFlags[measurement.getSvid() - 1] == false) {
+                    mUsefulSatellitesToReceiverMeasurements[measurement.getSvid() - 1] = gpsReceiverMeasurement;
+                    Log.d(TAG, measurement.getSvid() + " in used");
+                }
             }
         }
 
@@ -465,6 +476,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         requestString.append("/").append(mGpsWeekNumber);
         requestString.append("/").append(tow);
         boolean verified = false;
+
         if (mGpsWeekNumber != 0) {
             String navMessageData = navMessageProvider.fetchData(requestString.toString());
             if (navMessageData != null) {
@@ -478,10 +490,31 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                         (mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] != null)) {
                     Log.d(TAG, "EphProvider: continue use satellite " + messagePrn);
                 } else {
-                    Log.d(TAG, "EphProvider: reject use satellite " + messagePrn);
+                    Log.d(TAG, "EphProvider invalid navigation data: reject satellite " + messagePrn);
                     mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
+                    lockFlags[navigationMessage.getSvid() - 1] = true;
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            lockFlags[navigationMessage.getSvid() - 1] = false;
+                            Log.d(TAG, "EphProvider: unlock satellite " + (navigationMessage.getSvid() - 1 + 1));
+                        }
+                    }, BLOCK_NAV_MINUTES * 60 * 1000);
                 }
+
+            } else {
+                Log.d(TAG, "EphProvider 404: reject satellite " + messagePrn );
+                mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
+                lockFlags[navigationMessage.getSvid() - 1] = true;
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        lockFlags[navigationMessage.getSvid() - 1] = false;
+                        Log.d(TAG, "EphProvider: unlock satellite " + (navigationMessage.getSvid() - 1 + 1) );
+                    }
+                }, BLOCK_NAV_MINUTES * 60 * 1000);
             }
+
         }
 
 
@@ -597,7 +630,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
 
     private static int calculateTow(StringBuilder resultBuilder) {
         String bitsToConvert = resultBuilder.substring(24, 24 + 19);
-        int tow = (int) ((((Integer.parseInt(bitsToConvert, 2)) * 1.5) / 6) * 6) - 1;
+        int tow = (int) ((((Integer.parseInt(bitsToConvert, 2)) * 1.5) / 6) * 6);
         return tow;
     }
 

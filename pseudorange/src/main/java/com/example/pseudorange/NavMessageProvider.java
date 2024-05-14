@@ -11,9 +11,9 @@ import java.net.URL;
 
 public class NavMessageProvider {
 
-    private static final String BASE_URL = "https://8a24-1-55-245-5.ngrok-free.app/";
+    private static final String BASE_URL = "https://ace-rationally-flounder.ngrok-free.app/";
 
-    public String fetchData(String endpoint) {
+    public String fetchData(String endpoint)  {
         HttpURLConnection connection = null;
         BufferedReader reader = null;
         String result = null;
