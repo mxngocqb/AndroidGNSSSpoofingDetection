@@ -10,9 +10,6 @@ Next, the receiver will receive navigation data from the supply system, authenti
 <img src="https://github.com/mxngocqb/AndroidGNSSSpoofingDetection/blob/master/picture/solution.jpg" alt="Solution image" width="900" />
 
 You can access the server that provide accurate Navigation Message at the following URL: [ace-rationally-flounder.ngrok-free.app](https://ace-rationally-flounder.ngrok-free.app)
-###Documentation:
-For detailed documentation, please visit the following link:  
-
-[Project Documentation](https://github.com/mxngocqb/RSA)
+For detailed documentation, please visit the following link: [Project Documentation](https://github.com/mxngocqb/RSA)
 
 
