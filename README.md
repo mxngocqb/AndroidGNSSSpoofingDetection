@@ -7,4 +7,12 @@ First of all, part of the system will focus on identifying fake signals. If a si
 
 Next, the receiver will receive navigation data from the supply system, authenticate it with a digital signature and then compare it with the navigation data it received. If any discrepancies are detected, the instrument removes the corresponding satellite from the Position, Velocity and Time (PVT) calculation. As a result, the device will be able to eliminate the influence of spurious signals on the PVT.
 
+You can access the server that provide accurate Navigation Message at the following URL:  
+[ace-rationally-flounder.ngrok-free.app](https://ace-rationally-flounder.ngrok-free.app)
+
+## #Documentation
+
+For detailed documentation, please visit the following link:  
+[Project Documentation](https://github.com/mxngocqb/RSA)
+
 <img src="https://github.com/mxngocqb/AndroidGNSSSpoofingDetection/blob/master/picture/solution.jpg" alt="Solution image" width="900" />
