@@ -9,7 +9,7 @@ Next, the receiver will receive navigation data from the supply system, authenti
 
 <img src="https://github.com/mxngocqb/AndroidGNSSSpoofingDetection/blob/master/picture/solution.jpg" alt="Solution image" width="900" />
 
-You can access the server that provide accurate Navigation Message at the following URL: [http://203.171.20.94:5555](http://203.171.20.94:5555)
+You can access the server that provide accurate Navigation Message at the following [Ephemeris Provider Server](http://203.171.20.94:5555/swagger/index.html)
 For detailed , please visit the following link: [GNSS Spoofing Detection Backend](https://github.com/mxngocqb/EphProvider)
 ## User manual
 For implementing GNSS spoofing detection, download the pseudorange module from [here](https://github.com/mxngocqb/AndroidGNSSSpoofingDetection/tree/master/pseudorange) and the essential files: `MeasurementListener`, `MeasurementProvider`, and `RealtimePositionsVelocityCalculator` like my example project [here](https://github.com/mxngocqb/AndroidGNSSSpoofingDetection/tree/master/app).
