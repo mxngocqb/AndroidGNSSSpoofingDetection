@@ -40,7 +40,7 @@ public interface MeasurementListener {
   /** @see GnssMeasurementsEvent.Callback#onStatusChanged(int) */
   void onGnssMeasurementsStatusChanged(int status);
   /** @see GnssNavigationMessage.Callback# onGnssNavigationMessageReceived(GnssNavigationMessage) */
-  void onGnssNavigationMessageReceived(GnssNavigationMessage event);
+  void onGnssNavigationMessageReceived(GnssNavigationMessage event, double timestamp);
   /** @see GnssNavigationMessage.Callback#onStatusChanged(int) */
   void onGnssNavigationMessageStatusChanged(int status);
   /** @see GnssStatus.Callback#onSatelliteStatusChanged(GnssStatus) */

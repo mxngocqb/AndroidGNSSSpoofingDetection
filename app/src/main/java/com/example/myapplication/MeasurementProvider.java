@@ -172,7 +172,8 @@ public class MeasurementProvider {
                 public void onGnssNavigationMessageReceived(GnssNavigationMessage event) {
                     if (mLogNavigationMessages) {
                         for (MeasurementListener logger : mListeners) {
-                            logger.onGnssNavigationMessageReceived(event);
+                            double timestamp = (System.currentTimeMillis() / 1000.0)-3;
+                            logger.onGnssNavigationMessageReceived(event, timestamp);
                         }
                     }
                 }

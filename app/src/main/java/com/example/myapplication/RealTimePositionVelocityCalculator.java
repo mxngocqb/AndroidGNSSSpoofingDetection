@@ -36,6 +36,9 @@ import com.example.pseudorange.GpsMathOperations;
 import com.example.pseudorange.GpsNavigationMessageStore;
 import com.example.pseudorange.PseudorangePositionVelocityFromRealTimeEvents;
 
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.concurrent.TimeUnit;
 
@@ -262,6 +265,35 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
                                                                                     + Math.pow(velSolution[1], 2))));
                                     logVelocityError("speed offset = " + formattedSpeedOffsetMps + " mps");
                                 }
+                                String urlString = "http://203.171.20.94:5556/api/PVTs";
+                                String jsonInputString = String.format(
+                                        "{\"latitudeLib\": %s, \"longitudeLib\": %s, \"latitudeRaw\": %s, \"longitudeRaw\": %s}",
+                                        location.getLatitude(), location.getLongitude(), posSolution[0], posSolution[1]
+                                );
+                                HttpURLConnection urlConnection = null;
+                                try {
+                                    URL url = new URL(urlString);
+                                    urlConnection = (HttpURLConnection) url.openConnection();
+                                    urlConnection.setRequestMethod("POST");
+                                    urlConnection.setRequestProperty("Content-Type", "application/json; utf-8");
+                                    urlConnection.setRequestProperty("Accept", "application/json");
+                                    urlConnection.setDoOutput(true);
+
+                                    try(OutputStream os = urlConnection.getOutputStream()) {
+                                        byte[] input = jsonInputString.getBytes("utf-8");
+                                        os.write(input, 0, input.length);
+                                    }
+
+                                    int code = urlConnection.getResponseCode();
+                                    System.out.println("HTTP Response Code: " + code);
+
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                } finally {
+                                    if (urlConnection != null) {
+                                        urlConnection.disconnect();
+                                    }
+                                }
                                 logLocationEvent("onLocationChanged: " + location);
                             }
                         };
@@ -311,16 +343,12 @@ public class RealTimePositionVelocityCalculator implements MeasurementListener {
     }
 
     @Override
-    public void onGnssNavigationMessageReceived(GnssNavigationMessage event) {
-        /*
-        if (event.getType() == GnssNavigationMessage.TYPE_GPS_L1CA) {
-            mPseudorangePositionVelocityFromRealTimeEvents.parseHwNavigationMessageUpdates(event);
-        }*/
+    public void onGnssNavigationMessageReceived(GnssNavigationMessage event, double timestamp) {
         if (event.getType() == GnssNavigationMessage.TYPE_GPS_L1CA) {
             Runnable r = new Runnable() {
                 @Override
                 public void run() {
-                    mPseudorangePositionVelocityFromRealTimeEvents.parseHwNavigationMessageUpdates(event);
+                    mPseudorangePositionVelocityFromRealTimeEvents.preventGnssSpoofingAndSetEphemeris(event, timestamp);
                 }
             };
             long delayMillis = 10000;

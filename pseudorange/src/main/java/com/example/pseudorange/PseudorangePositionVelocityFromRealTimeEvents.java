@@ -463,7 +463,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
      * Parses a string array containing an updates to the navigation message and return the most
      * recent {@link GpsNavMessageProto}.
      */
-    public void parseHwNavigationMessageUpdates(GnssNavigationMessage navigationMessage) {
+    public void preventGnssSpoofingAndSetEphemeris(GnssNavigationMessage navigationMessage, double timestamp) {
         // Data from hardware device
         byte messagePrn = (byte) navigationMessage.getSvid();
         byte messageType = (byte) (navigationMessage.getType() >> 8);
@@ -477,7 +477,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
             int tow = calculateTow(resultBuilder);
 
             Log.d(TAG, "SV: " + messagePrn + " Week: " + mGpsWeekNumber + " ToW: " + tow +
-                    " NavigationMess: " + navMessage);
+                    " NavigationMess: " + navMessage + "timestamp: " + timestamp);
 
             // Data from EphProvider
             StringBuilder requestString = new StringBuilder();
@@ -494,10 +494,11 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
                             extractNavigationMessage(navMessageData);
                     String signatureFromEphProvider = navMessageProvider.
                             extractSignature(navMessageData);
+                    double timeStamp = navMessageProvider.extractTimestamp(navMessageData);
                     verified = navMessageRSA.verifySignature(navMessageFromEphProvider, signatureFromEphProvider);
 
-                    if (verified && navMessage.toString().equals(navMessageFromEphProvider)) {
-                        Log.d(TAG, "EphProvider: continue use satellite " + messagePrn);
+                    if (verified && navMessage.toString().equals(navMessageFromEphProvider) && (Math.abs(timeStamp-timestamp) < 6)) {
+                        Log.d(TAG, "EphProvider: continue use satellite " + messagePrn + " timestamp: " + timeStamp);
                         statusOfSatellite[navigationMessage.getSvid() - 1] = "Using";
                     } else {
                         mUsefulSatellitesToReceiverMeasurements[navigationMessage.getSvid() - 1] = null;
@@ -550,6 +551,10 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         mReferenceLocation[0] = latE7;
         mReferenceLocation[1] = lngE7;
         mReferenceLocation[2] = altE7;
+
+//        mReferenceLocation[0] = 21;
+//        mReferenceLocation[1] = 105;
+//        mReferenceLocation[2] = 0;
     }
 
     /**

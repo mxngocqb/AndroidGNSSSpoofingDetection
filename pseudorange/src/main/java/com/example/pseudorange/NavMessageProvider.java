@@ -12,7 +12,7 @@ import java.net.URL;
 public class NavMessageProvider {
 
 //    private static final String BASE_URL = "https://ace-rationally-flounder.ngrok-free.app/";
-private static final String BASE_URL = "http://203.171.20.94:5555/";
+private static final String BASE_URL = "http://203.171.20.94:5556/";
     public String fetchData(String endpoint)  {
         HttpURLConnection connection = null;
         BufferedReader reader = null;
@@ -74,6 +74,17 @@ private static final String BASE_URL = "http://203.171.20.94:5555/";
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public double extractTimestamp(String navMessageData) {
+        try {
+            JSONObject jsonObject = new JSONObject(navMessageData);
+            double number = Double.parseDouble(jsonObject.getString("timestamp"));
+            return number;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return 0;
         }
     }
 }
